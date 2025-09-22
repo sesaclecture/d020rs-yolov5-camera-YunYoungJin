@@ -7,30 +7,36 @@ model = torch.hub.load("ultralytics/yolov5", "yolov5m")
 # Video capture
 cap = cv2.VideoCapture(0)
 
-# TODO: Loop for camera frames
+while True:
+    # Read frame (BGR to RGB)
+    ret, frame = cap.read()
 
+    if not ret:
+        print("Cannot read frame.")
+        break
 
-# Read frame (BGR to RGB)
-ret, frame = cap.read()
-# TODO: break the loop on error
+    # 추론 실행 (BGR -> RGB)
+    rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+    results = model(rgb_frame)
 
-# 추론 실행 (BGR -> RGB)
-rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-results = model(rgb_frame)
+    for i, obj in enumerate(results.xyxy[0]):
+        x1, y1, x2, y2, _, cls = map(int, obj)
+        conf = obj[4]
+        label = f"{model.names[cls]} {conf:.2f}"
+        print(f"Object {i}: {label} at [{x1}, {y1}, {x2}, {y2}]")
 
-# TODO: Boudning box 그리기
-for i, obj in enumerate(results.xyxy[0]):
-    # TODO: 인식결과를 표시하기 위한 좌표를 얻음
+        # 사각형 그리기
+        cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
 
-    # TODO: 인식된 정확도(confidence)와 클래스를 label로 구성
+        # 라벨 텍스트
+        cv2.putText(frame, label, (x1, y1 - 10),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
 
-    # TODO: OpenCV를 이용해서 해당 좌표에 사각형과 text를 출력
-    obj_info = list(map(int, obj))
-    print(f"Object {i}: {model.names[obj_info[5]]}")
+    cv2.imshow("YOLOv5 cam", frame)
 
-# TODO: 화면 표시
-
-# TODO: 종료를 위한 key 처리
+    if cv2.waitKey(1) & 0xFF == ord('q'):
+        break
 
 cap.release()
 cv2.destroyAllWindows()
+
